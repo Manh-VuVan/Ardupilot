@@ -1,135 +1,110 @@
-# ArduPilot Project
+# Hướng dẫn mô phỏng SITL X-Plane
+An Ardupilot control model for QuadPlane flight simulation with X-Plane
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+## Giới thiệu
+  Đây là dự án mô phỏng hệ thống điều khiển tự động cho UAV QuadPlane mã nguồn mở Ardupilot sử dụng nền tảng mô phỏng X-Plane.
+## Tiến hành
+### 1. Chuẩn bị môi trường phát triển:
+- **1.1 Cài đặt X-Plane theo hướng dẫn ở đây: https://www.evernote.com/shard/s659/sh/4bfff893-1356-9ed0-3da8-be3b00f1a5a9/f106fd834ee6499e70ace57bcb7f8911**
+- **1.2 Cài đặt Visual Studio Code: https://code.visualstudio.com/docs/setup/windows**
+- **1.3 Cài đặt Windows Subsystem for Linux với retro Ubuntu 18.04 hoặc 20.04: https://docs.microsoft.com/en-us/windows/wsl/install-win10**
+      ![Ubuntu retro](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/ubuntu.png?raw=true)
+- **1.4 Cài đặt Mission Planner: https://ardupilot.org/planner/docs/mission-planner-installation.html**     
+---       
+### 2. Kéo dự án về local bằng Visual Studio Code với đường dẫn: https://github.com/binhnt94/ardupilot
+  ![Github](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/github(1).png?raw=true)
+  ![Github](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/github(2).png?raw=true)
+  ![Github](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/github(3).png?raw=true)
+  ![Github](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/github(4).png?raw=true)      
 
-[![Build Travis](https://travis-ci.org/ArduPilot/ardupilot.svg?branch=master)](https://travis-ci.org/ArduPilot/ardupilot) [![Build SemaphoreCI](https://semaphoreci.com/api/v1/ardupilot/ardupilot/branches/master/badge.svg)](https://semaphoreci.com/ardupilot/ardupilot) [![Build Status](https://dev.azure.com/ardupilot-org/ardupilot/_apis/build/status/ArduPilot.ardupilot?branchName=master)](https://dev.azure.com/ardupilot-org/ardupilot/_build/latest?definitionId=1&branchName=master)
+### 3. Chạy dự án
+- **3.1 Mở dự án bằng cách nhấn Open.**
+  ![open](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/open.jpg?raw=true)      
+- **3.2 Mở dự án trong Windows Subsystem for Linux (WSL).**
+  ![open in WSL](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/open-in-WSL.jpg?raw=true)      
+- **3.3 Chọn retro Ubuntu.**
+  ![Re-open in WSL](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/re-open-in-WSL.jpg?raw=true)      
+  ![Ubuntu 18.04](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/18-04.jpg?raw=true)      
+  ![Kết quả](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/ket-qua.jpg?raw=true)      
+- **3.4 Chạy script khởi tạo môi trường.**
+  ```shell
+    $ cd Tools/environment_install/
+    $ ./install-prereqs-ubuntu.sh 
+  ```
+- **3.5 Thoát ra thư mục dự án và chạy script mô phỏng**
+  ```shell
+  $ cd ..
+  $ cd ..
+  $ source ~/.profile
+  $ sim_vehicle.py -v ArduPlane -f xplane
+  ```
+  > ở đây -v là tham số vehicle, -f là tham số frame
+  Nếu biên dịch không báo lỗi nghĩa là chạy thành công thì tắt đi bằng tổ hợp phím Ctrl+C.
+  ---
+### 4. Chạy X-Plane với mô hình QuadPlane và sân bay 916 Hoa Lac.
+- **4.2 Tìm đến phần Settings**
+  --> tab Data Output --> NETWORK CONFIGURATION,
+  đánh dấu tích vào ô Send network data output. Đặt IP address: 127.0.0.1
+  Port 49005
+- **4.3 Vẫn ở tab Data Output**
+  Cài đặt các tham số data rate như hình:      
+  ![Data rate](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/data-output.png?raw=true)
+- **4.4 Tích chọn 1 trường dữ liệu bất kỳ**
+  ![Chọn trường dữ liệu](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/select.png?raw=true)
+- **4.5 Chọn máy bay và sân bay như hình minh họa**    
+  ![Chọn chuyến bay mới](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/new-flight.png?raw=true)
+  ![Bắt đầu chuyến bay mới](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/start.png?raw=true)
+---
+### 5. Tùy chọn: vận hành bay bằng cmd mavproxy hoặc GCS Mission Planner hoặc QgroundControl
+- **5.1 Chạy lệnh sau để chạy script mô phỏng**
+  ```shell
+    $ sim_vehicle.py -v ArduPlane -f xplane       
+  ```
+  > ở đây -v là tham số vehicle, -f là tham số frame
+- **5.2 Kết nối Mission Planner qua UDP: Baudrate 115200**
+    ![Kết nối Mission Planner qua UDP](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/MP-udp.png?raw=true)
+    ![Kết nối Mission Planner qua UDP](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/connect-MP.png?raw=true)
+    ![Kết nối Mission Planner qua UDP](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/ok.png?raw=true)
+- **5.3 Nạp tham số cấu hình cho Autopilot**
+    ![Nạp tham số cấu hình](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/config.png?raw=true)
+    ![Nạp tham số cấu hình](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/load.png?raw=true)
+    ![Nạp tham số cấu hình](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/write.png?raw=true)
+    ![Nạp tham số cấu hình](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/ok.png?raw=true)
+- **5.4 Nạp nhiệm vụ bay cho Autopilot**
+    ![Nạp nhiệm vụ bay](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/plan.png?raw=true)
+    ![Nạp nhiệm vụ bay](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/load-wp.png?raw=true)
+    ![Nạp nhiệm vụ bay](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/write-wp.png?raw=true)
+- **5.5 Vận hành bay tự động cơ bản**
+  - Khi cửa sổ dòng lệnh của Visual Studio Code hiện ra dòng: 
+  ```shell
+  APM: EKF2 IMU0 is using GPS
+  APM: EKF2 IMU1 is using GPS
+  APM: EKF3 IMU1 is using GPS
+  APM: EKF3 IMU0 is using GPS
+  ```
+  nghĩa là Autopilot đã khởi động xong.
+  - Ta tiến hành đặt WP khởi đầu và mode bay cho máy bay:      
+  ![Đặt WP khởi đầu và mode bay](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/set-mode-wp.png?raw=true)
+  - Arm máy bay để bắt đầu quá trình bay tự động:
+  ![Arm](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/arm.png?raw=true)
+  - Đặt WP tiếp theo thành WP số 9 để hạ cánh:
+  ![Hạ cánh](https://github.com/binhnt94/ardupilot/blob/master/tutorial-images/wp-land.png?raw=true)
+---
+ ### 6. Tham số cấu hình cho Autopilot:
+  - Tham số điều khiển bay mô phỏng cho QuadPlane: ${workspaceFolder}/X-Plane configuration/xplane_sil.param
+  - Nhiệm vụ bay 916 Hoa Lac: 916_15012020.waypoints      
+  - Tất cả nằm trong đường dẫn "/X-Plane configuration" của project.
+---
+# Tutorial for QuadPlane Simulation
+An Ardupilot control model for QuadPlane flight simulation with X-Plane
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
+## 1. Overview
+This project provide a collection of useful resources for beginners to understand control algorithms for an QuadPlane.
+The project has come with real-time UDP protocol for controlling aircraft model in X-Plane.
 
-[![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
+## 2. Getting started
+  * Install and purchase an X-Plane according to https://www.evernote.com/shard/s659/sh/4bfff893-1356-9ed0-3da8-be3b00f1a5a9/f106fd834ee6499e70ace57bcb7f8911
 
-Ardupilot is the most advanced, full-featured and reliable open source autopilot software available. It has
-been under development since 2010 by a team of diverse professional engineers and computer scientists. It is
-the only autopilot software capable of controlling almost any vehicle system imaginable, from conventional
-airplanes, multirotors, and helicopters, to boats and even submarines. And now being expanded to feature
-support for new emerging vehicle types such as quad-planes and compound helicopters.
-
-## The ArduPilot project is made up of: ##
-
-- ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
-
-- ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
-
-- ArduRover (or Rover) : [code](https://github.com/ArduPilot/ardupilot/tree/master/Rover), [wiki](https://ardupilot.org/rover/index.html)
-
-- ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
-
-- Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](https://ardupilot.org/antennatracker/index.html)
-
-## User Support & Discussion Forums ##
-
-- Support Forum: <https://discuss.ardupilot.org/>
-
-- Community Site: <https://ardupilot.org>
-
-## Developer Information ##
-
-- Github repository: <https://github.com/ArduPilot/ardupilot>
-
-- Main developer wiki: <https://ardupilot.org/dev/>
-
-- Developer discussion: <https://discuss.ardupilot.org>
-
-- Developer chat: <https://gitter.im/ArduPilot/ardupilot>
-
-## Top Contributors ##
-
-- [Flight code contributors](https://github.com/ArduPilot/ardupilot/graphs/contributors)
-- [Wiki contributors](https://github.com/ArduPilot/ardupilot_wiki/graphs/contributors)
-- [Most active support forum users](https://discuss.ardupilot.org/u?order=post_count&period=quarterly)
-- [Partners who contribute financially](https://ardupilot.org/about/Partners)
-
-## How To Get Involved ##
-
-- The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
-
-- We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
-
-- Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
-
-- Help other users with log analysis in the [support forums](https://discuss.ardupilot.org/)
-
-- Improve the wiki and chat with other [wiki editors on Gitter](https://gitter.im/ArduPilot/ardupilot_wiki)
-
-- Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
-
-## License ##
-
-The ArduPilot project is licensed under the GNU General Public
-License, version 3.
-
-- [Overview of license](https://dev.ardupilot.com/wiki/license-gplv3)
-
-- [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
-
-## Maintainers ##
-
-Ardupilot is comprised of several parts, vehicles and boards. The list below
-contains the people that regularly contribute to the project and are responsible
-for reviewing patches on their specific area.  See also the list of developers with [merge rights](https://github.com/orgs/ArduPilot/teams/ardupilot-maintainers/members).
-
-- [Andrew Tridgell](https://github.com/tridge):
-  - ***Vehicle***: Plane, AntennaTracker
-  - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
-- [Francisco Ferreira](https://github.com/oxinarf):
-  - ***Bug Master***
-- [Grant Morphett](https://github.com/gmorph):
-  - ***Vehicle***: Rover
-- [Jacob Walser](https://github.com/jaxxzer):
-  - ***Vehicle***: Sub
-- [Lucas De Marchi](https://github.com/lucasdemarchi):
-  - ***Subsystem***: Linux
-- [Michael du Breuil](https://github.com/WickedShell):
-  - ***Subsystem***: Batteries
-  - ***Subsystem***: GPS
-  - ***Subsystem***: Scripting
-- [Peter Barker](https://github.com/peterbarker):
-  - ***Subsystem***: DataFlash, Tools
-- [Randy Mackay](https://github.com/rmackay9):
-  - ***Vehicle***: Copter, Rover, AntennaTracker
-- [Tom Pittenger](https://github.com/magicrub):
-  - ***Vehicle***: Plane
-- [Bill Geyer](https://github.com/bnsgeyer):
-  - ***Vehicle***: TradHeli
-- [Chris Olson](https://github.com/ChristopherOlson):
-  - ***Vehicle***: TradHeli
-- [Emile Castelnuovo](https://github.com/emilecastelnuovo):
-  - ***Board***: VRBrain
-- [Eugene Shamaev](https://github.com/EShamaev):
-  - ***Subsystem***: CAN bus
-  - ***Subsystem***: UAVCAN
-- [Georgii Staroselskii](https://github.com/staroselskii):
-  - ***Board***: NavIO
-- [Gustavo José de Sousa](https://github.com/guludo):
-  - ***Subsystem***: Build system
-- [Julien Beraud](https://github.com/jberaud):
-  - ***Board***: Bebop & Bebop 2
-- [Leonard Hall](https://github.com/lthall):
-  - ***Subsystem***: Copter attitude control and navigation
-- [Matt Lawrence](https://github.com/Pedals2Paddles):
-  - ***Vehicle***: 3DR Solo & Solo based vehicles
-- [Matthias Badaire](https://github.com/badzz):
-  - ***Subsystem***: FRSky
-- [Mirko Denecke](https://github.com/mirkix):
-  - ***Board***: BBBmini, BeagleBone Blue, PocketPilot
-- [Paul Riseborough](https://github.com/priseborough):
-  - ***Subsystem***: AP_NavEKF2
-  - ***Subsystem***: AP_NavEKF3
-- [Pierre Kancir](https://github.com/khancyr):
-  - ***Subsystem***: Copter SITL, Rover SITL
-- [Víctor Mayoral Vilches](https://github.com/vmayoral):
-  - ***Board***: PXF, Erle-Brain 2, PXFmini
-- [Amilcar Lucas](https://github.com/amilcarlucas):
-  - ***Subsystem***: Marvelmind
-- [Samuel Tabor](https://github.com/samuelctabor):
-  - ***Subsystem***: Soaring/Gliding
+## 3. Flight your own models and learn.
+  * Refer [modelling instruction](https://developer.x-plane.com/manuals/planemaker/#The_Plane_Maker_Interface) from Laminar Research
+  to build your own aircraft models.   

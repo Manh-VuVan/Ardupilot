@@ -43,11 +43,11 @@ private:
     bool receive_data(void);
     void send_dref(const char *name, float value);
     void send_data(const struct sitl_input &input);
-    void select_data(uint64_t usel_mask, uint64_t sel_mask);
+    void select_data(uint64_t usel_mask, uint64_t usel_mask2, uint64_t sel_mask, uint64_t sel_mask2);
 
     const char *xplane_ip = "127.0.0.1";
     uint16_t xplane_port = 49000;
-    uint16_t bind_port = 49001;
+    uint16_t bind_port = 49005;
     // udp socket, input and output
     SocketAPM socket_in{true};
     SocketAPM socket_out{true};
@@ -70,6 +70,7 @@ private:
     bool heli_frame;
 
     uint64_t unselected_mask;
+    uint64_t unselected_mask2;
     
     // throttle joystick input is very weird. See comments in the main code
     const float throttle_magic = 0.000123f;
@@ -107,6 +108,8 @@ private:
         PropRPM             = 38,
         PropPitch           = 39,
         Generator           = 58,
+        Aileron1            = 70,
+        Elevator            = 74
 	};
 };
 

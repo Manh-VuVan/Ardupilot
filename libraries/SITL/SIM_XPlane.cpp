@@ -57,7 +57,7 @@ XPlane::XPlane(const char *frame_str) :
  change what data is requested from XPlane. This saves the user from
  having to setup the data screen correctly
  */
-void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
+void XPlane::select_data(uint64_t usel_mask, uint64_t usel_mask2, uint64_t sel_mask, uint64_t sel_mask2)
 {
     struct PACKED {
         uint8_t  marker[5] { 'D', 'S', 'E', 'L', '0' };
@@ -68,6 +68,16 @@ void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
         if ((((uint64_t)1)<<i) & sel_mask) {
             dsel.data[count++] = i;
             printf("i=%u\n", (unsigned)i);
+        }
+        if ((((uint64_t)1)<<i) & sel_mask2) {
+            dsel.data[count++] = i + 64;
+            printf("i=%u\n", (unsigned)i);
+        }
+        if (count == 8)
+        {
+            socket_out.send(&dsel, sizeof(dsel));
+            count = 0;
+            printf("Selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)sel_mask);
         }
     }
     if (count != 0) {
@@ -81,13 +91,19 @@ void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
     } usel;
     count = 0;
 
-    // only de-select an output once, so we don't fight the user
-    usel_mask &= ~unselected_mask;
-    unselected_mask |= usel_mask;
-
+    // We de-select every user-selected output
     for (uint8_t i=0; i<64 && count<8; i++) {
         if ((((uint64_t)1)<<i) & usel_mask) {
             usel.data[count++] = i;
+        }
+        if ((((uint64_t)1)<<i) & usel_mask2) {
+            usel.data[count++] = i + 64;
+        }
+        if (count == 8)
+        {
+            socket_out.send(&usel, sizeof(usel));
+            count = 0;
+            printf("De-selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)usel_mask);            
         }
     }
     if (count != 0) {
@@ -105,22 +121,19 @@ bool XPlane::receive_data(void)
     uint8_t *p = &pkt[5];
     const uint8_t pkt_len = 36;
     uint64_t data_mask = 0;
+    uint64_t data_mask2 = 0;    
     const uint64_t one = 1U;
     const uint64_t required_mask = (one<<Times | one<<LatLonAlt | one<<Speed | one<<PitchRollHeading |
                                     one<<LocVelDistTraveled | one<<AngularVelocities | one<<Gload |
-                                    one << Joystick1 | one << ThrottleCommand | one << Trim |
+                                    one << Joystick1 | one << Joystick2 | one << ThrottleCommand | one << Trim |
                                     one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator |
                                     one << Mixture);
+    const uint64_t required_mask2 = (one << (Aileron1 - 64) | one << (Elevator - 64));                                    
     Location loc {};
     Vector3f pos;
     uint32_t wait_time_ms = 1;
     uint32_t now = AP_HAL::millis();
-
-    // if we are about to get another frame from X-Plane then wait longer
-    if (xplane_frame_time > wait_time_ms &&
-        now+1 >= last_data_time_ms + xplane_frame_time) {
-        wait_time_ms = 10;
-    }
+    
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
     
     if (len < pkt_len+5 || memcmp(pkt, "DATA", 4) != 0) {
@@ -144,6 +157,9 @@ bool XPlane::receive_data(void)
         // keep a mask of what codes we have received
         if (code < 64) {
             data_mask |= (((uint64_t)1) << code);
+        } else if ((code > 64) && (code < 100))
+        {
+            data_mask2 |= (((uint64_t)1) << (code - 64));
         }
         switch (code) {
         case Times: {
@@ -167,7 +183,8 @@ bool XPlane::receive_data(void)
             loc.lng = data[2] * 1e7;
             loc.alt = data[3] * FEET_TO_METERS * 100.0f;
             const float altitude_above_ground = data[4] * FEET_TO_METERS;
-            ground_level = loc.alt * 0.01f - altitude_above_ground;
+            ground_level = loc.alt * 0.01f - altitude_above_ground;            
+            range = constrain_float(altitude_above_ground, 0.1f, 70.0f);
             break;
         }
 
@@ -289,17 +306,16 @@ bool XPlane::receive_data(void)
         p += pkt_len;
     }
 
-    if (data_mask != required_mask) {
+    if ((data_mask != required_mask) || (data_mask2 != required_mask2)) {
         // ask XPlane to change what data it sends
         uint64_t usel = data_mask & ~required_mask;
+        uint64_t usel2 = data_mask2 & ~required_mask2;
         uint64_t sel = required_mask & ~data_mask;
-        usel &= ~unselected_mask;
-        if (usel || sel) {
-            select_data(usel, sel);
-            goto failed;
-        }
+        uint64_t sel2 = required_mask2 & ~data_mask2;        
+        select_data(usel, usel2, sel, sel2);
+        goto failed;
     }
-    position = pos + position_zero;
+    position = -loc.get_distance_NED(home);
     update_position();
     time_advance();
 
@@ -307,7 +323,7 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (loc.get_distance(location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
+    if (loc.get_distance(location) > 5000 || abs(loc.alt - location.alt)*0.01f > 2000.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
                loc.get_distance(location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
@@ -360,10 +376,11 @@ failed:
 */
 void XPlane::send_data(const struct sitl_input &input)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float throttle = (input.servos[2]-1000)/1000.0;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    float left_aileron  =  -(input.servos[0]-1500)/500.0f;
+    float right_aileron =   (input.servos[1]-1500)/500.0f;
+    float VTailLeft     =   (input.servos[2]-1500)/500.0f;    
+    float VTailRight    =  -(input.servos[3]-1500)/500.0f;
+    float throttle      =   (input.servos[8]-1000)/1000.0f;
     struct PACKED {
         uint8_t  marker[5] { 'D', 'A', 'T', 'A', '0' };
         uint32_t code;
@@ -371,74 +388,43 @@ void XPlane::send_data(const struct sitl_input &input)
     } d {};
 
     if (input.servos[0] == 0) {
-        aileron = 0;
+        left_aileron = 0;
     }
     if (input.servos[1] == 0) {
-        elevator = 0;
+        right_aileron = 0;
     }
     if (input.servos[2] == 0) {
-        throttle = 0;
+        VTailLeft = 0;
     }
     if (input.servos[3] == 0) {
-        rudder = 0;
+        VTailRight = 0;
+    }
+    if (input.servos[8] == 0) {
+        throttle = 0;
     }
     
     // we add the throttle_magic to the throttle value we send so we
     // can detect when we get it back
     throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
-    
-    uint8_t flap_chan;
-    if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
-        SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
-        float flap = (input.servos[flap_chan]-1000)/1000.0;
-        if (!is_equal(flap, last_flap)) {
-            send_dref("sim/flightmodel/controls/flaprqst", flap);
-            send_dref("sim/aircraft/overflow/acf_flap_arm", flap>0?1:0);
-        }
-    }
 
-    d.code = FlightCon;
-    d.data[0] = elevator;
-    d.data[1] = aileron;
-    d.data[2] = rudder;
-    d.data[4] = rudder;
+
+    d.code = Aileron1;  
+    d.data[2] = left_aileron * 25;
+    d.data[3] = right_aileron * 25;    
     socket_out.send(&d, sizeof(d));
 
-    if (!heli_frame) {
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle;
-        d.data[3] = throttle;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    } else {
-        // send chan3 as collective pitch, on scale from -10 to +10
-        float collective = 10*(input.servos[2]-1500)/500.0;
-
-        // and send throttle from channel 8
-        throttle = (input.servos[7]-1000)/1000.0;
-
-        // allow for extra throttle outputs for special aircraft
-        float throttle2 = (input.servos[5]-1000)/1000.0;
-        float throttle3 = (input.servos[6]-1000)/1000.0;
-
-        d.code = PropPitch;
-        d.data[0] = collective;
-        d.data[1] = -rudder*15; // reverse sense of rudder, 15 degrees pitch range
-        d.data[2] = 0;
-        d.data[3] = 0;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle2;
-        d.data[3] = throttle3;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    }
+    d.code = Elevator;
+    d.data[0] = VTailLeft * 25;
+    d.data[1] = VTailRight * 25;    
+    socket_out.send(&d, sizeof(d));          
+    
+    d.code = PropRPM;
+    d.data[0] = throttle * 8000;
+    d.data[1] = (input.servos[4] - 1000.0f) * 10.0f; // 
+    d.data[2] = (input.servos[5] - 1000.0f) * 10.0f; // 
+    d.data[3] = (input.servos[6] - 1000.0f) * 10.0f; // 
+    d.data[4] = (input.servos[7] - 1000.0f) * 10.0f; // 
+    socket_out.send(&d, sizeof(d));
 
     throttle_sent = throttle;
 }
